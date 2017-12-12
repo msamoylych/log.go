@@ -1,7 +1,7 @@
 package api
 
 type Init struct {
-	Code string
+	NodeName string
 	Streams []string
 }
 

@@ -45,14 +45,14 @@ func handle(c net.Conn) {
 		return
 	}
 
-	log.Println("Harvester '" + init.Code + "' connected")
+	log.Println("Harvester '" + init.NodeName + "' connected")
 
 	var event api.LogEvent
 	for {
 		err = decoder.Decode(&event)
 		switch {
 		case err == io.EOF:
-			log.Println("Harvester '" + init.Code + "' disconnected")
+			log.Println("Harvester '" + init.NodeName + "' disconnected")
 			return
 		case err != nil:
 			log.Println("Read event error:", err)

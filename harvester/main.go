@@ -6,20 +6,40 @@ import (
 	"log.go/api"
 	"log"
 	"github.com/hpcloud/tail"
-	"fmt"
 	"io/ioutil"
 	"os/user"
-	"github.com/flynn/json5"
 	"io"
+	"os"
+	"os/signal"
+	"syscall"
+	"encoding/json"
 )
 
-func main() {
-	var conf = config()
-	var channel = make(chan api.LogEvent)
-	go client(conf, channel)
-	go watcher(conf, channel)
+var tails = make([]*tail.Tail, 0, 10)
 
-	fmt.Scanln()
+func main() {
+	sig := make(chan os.Signal)
+	signal.Notify(sig, syscall.SIGINT)
+	signal.Notify(sig, syscall.SIGTERM)
+
+	conf := config()
+	events := make(chan api.LogEvent)
+	stop := make(chan bool)
+	sender(conf, events, stop)
+	watcher(conf, events)
+
+	<-sig
+
+	for _, t := range tails {
+		t.Stop()
+		log.Println("Stop watching file:", t.Filename)
+	}
+	close(events)
+	log.Println("Events channel closed")
+
+	<-stop
+
+	os.Exit(0)
 }
 
 func config() Config {
@@ -34,66 +54,68 @@ func config() Config {
 	}
 
 	var config Config
-	err = json5.Unmarshal(confFile, &config)
+	err = json.Unmarshal(confFile, &config)
 	if err != nil {
 		log.Fatalln("Parse config error:", err)
 	}
-
-	config.Check()
-
-	return config
+	return config.Check()
 }
 
-func client(conf Config, channel <-chan api.LogEvent) {
-	var con, err = net.Dial("tcp", conf.Server.Address())
+func sender(conf Config, events <-chan api.LogEvent, stop chan<- bool) {
+	address := conf.Server.Address()
+	log.Println("Connect to", address)
+	connection, err := net.Dial("tcp", address)
 	if err != nil {
-		log.Fatalln("Connection failed", err)
+		log.Fatalln("Connection failed:", err)
 	}
-	defer con.Close()
 
-	var encoder = gob.NewEncoder(con)
+	encoder := gob.NewEncoder(connection)
 
-	var init = api.Init{Code: "client"}
-	var streams = make([]string, len(conf.LogStreams))
-	var i byte = 0
+	init := api.Init{NodeName: conf.NodeName}
+	streams := make([]string, len(conf.LogStreams))
 	for k := range conf.LogStreams {
-		streams[i] = k
-		i++
+		streams = append(streams, k)
 	}
 	init.Streams = streams
-	err = encoder.Encode(&init)
+	err = encoder.Encode(init)
 	if err != nil {
-		log.Panicln("Init error", err)
+		log.Fatalln("Send init error:", err)
 	}
+	log.Println("Harvester inited")
 
-	for {
-		var event = <-channel
-		err = encoder.Encode(&event)
-		if err != nil {
-			log.Println("Send error", err)
+	go func() {
+		defer connection.Close()
+
+		for event := range events {
+			err = encoder.Encode(event)
+			if err != nil {
+				log.Panicln("Send event error:", err)
+			}
 		}
-	}
+
+		stop <- true
+	}()
 }
 
-func watcher(conf Config, channel chan<- api.LogEvent) {
-	var i byte = 0
+func watcher(conf Config, events chan<- api.LogEvent) {
+	var code byte
 	for _, v := range conf.LogStreams {
-		for _, f := range v {
-			go watch(i, f, channel)
+		for _, file := range v {
+			seekInfo := tail.SeekInfo{Offset: 0, Whence: io.SeekEnd}
+			t, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true, Location: &seekInfo, Logger: tail.DiscardingLogger})
+			if err != nil {
+				log.Fatalln("Init watcher error:", err)
+			}
+
+			tails = append(tails, t)
+			log.Println("Start watching file:", file)
+
+			go func() {
+				for line := range t.Lines {
+					events <- api.LogEvent{Code: code, Msg: line.Text}
+				}
+			}()
 		}
-		i++
-	}
-}
-
-func watch(code byte, filename string, channel chan<- api.LogEvent) {
-	var seekInfo = tail.SeekInfo{Offset: 0, Whence: io.SeekEnd}
-	var logger = tail.DiscardingLogger
-	t, err := tail.TailFile(filename, tail.Config{Follow: true, ReOpen: true, Location: &seekInfo, Logger: logger})
-	if err != nil {
-		log.Fatalln("Init watcher error:", err)
-	}
-
-	for line := range t.Lines {
-		channel <- api.LogEvent{Code: code, Msg: line.Text}
+		code++
 	}
 }

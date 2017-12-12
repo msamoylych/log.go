@@ -20,14 +20,15 @@ func (s Server) Address() string {
 	return s.Host + ":" + strconv.FormatUint(uint64(s.Port), 10)
 }
 
-func (c Config) Check() {
-	if (c.NodeName == "") {
+func (c Config) Check() Config {
+	if c.NodeName == "" {
 		log.Fatalln("Node name is not specified")
 	}
-	if (c.Server.Host == "") {
+	if c.Server.Host == "" {
 		log.Fatalln("Server host is not specified")
 	}
-	if (c.Server.Port == 0) {
+	if c.Server.Port == 0 {
 		log.Fatalln("Server port is not specified")
 	}
+	return c
 }
