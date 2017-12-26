@@ -1,0 +1,201 @@
+html, body, .container-fluid, .row, #sidebar, #content, .window, .events {
+    height: 100%;
+}
+
+#sidebar, #content {
+    padding-right: 0;
+    padding-left: 5px;
+}
+
+.list-group-item {
+    padding: 0.3rem 1.25rem;
+}
+
+.form-group {
+    margin: 3px;
+}
+
+.diode {
+    width: 8px;
+    height: 8px;
+    margin: 8px 8px 0 0;
+    background-color: #555;
+    border-radius: 4px;
+    float: left;
+}
+
+.checkboxes {
+    position: absolute;
+    top: 6px;
+    right: 5px;
+}
+
+.window {
+    padding: 10px;
+}
+
+.events {
+    padding: 0 3px;
+    overflow-wrap: break-word;
+    overflow-y: auto;
+}
+
+.color1 {
+    color: #1f77b4;
+}
+
+.color2 {
+    color: #aec7e8;
+}
+
+.color3 {
+    color: #ff7f0e;
+}
+
+.color4 {
+    color: #ffbb78;
+}
+
+.color5 {
+    color: #2ca02c;
+}
+
+.color6 {
+    color: #98df8a;
+}
+
+.color7 {
+    color: #d62728;
+}
+
+.color8 {
+    color: #ff9896;
+}
+
+.color9 {
+    color: #9467bd;
+}
+
+.color10 {
+    color: #c5b0d5;
+}
+
+.color11 {
+    color: #8c564b;
+}
+
+.color12 {
+    color: #c49c94;
+}
+
+.color13 {
+    color: #e377c2;
+}
+
+.color14 {
+    color: #f7b6d2;
+}
+
+.color15 {
+    color: #7f7f7f;
+}
+
+.color16 {
+    color: #c7c7c7;
+}
+
+.color17 {
+    color: #bcbd22;
+}
+
+.color18 {
+    color: #dbdb8d;
+}
+
+.color19 {
+    color: #17becf;
+}
+
+.color20 {
+    color: #9edae5;
+}
+
+.diode.color1 {
+    background-color: #1f77b4;
+}
+
+.diode.color2 {
+    background-color: #aec7e8;
+}
+
+.diode.color3 {
+    background-color: #ff7f0e;
+}
+
+.diode.color4 {
+    background-color: #ffbb78;
+}
+
+.diode.color5 {
+    background-color: #2ca02c;
+}
+
+.diode.color6 {
+    background-color: #98df8a;
+}
+
+.diode.color7 {
+    background-color: #d62728;
+}
+
+.diode.color8 {
+    background-color: #ff9896;
+}
+
+.diode.color9 {
+    background-color: #9467bd;
+}
+
+.diode.color10 {
+    background-color: #c5b0d5;
+}
+
+.diode.color11 {
+    background-color: #8c564b;
+}
+
+.diode.color12 {
+    background-color: #c49c94;
+}
+
+.diode.color13 {
+    background-color: #e377c2;
+}
+
+.diode.color14 {
+    background-color: #f7b6d2;
+}
+
+.diode.color15 {
+    background-color: #7f7f7f;
+}
+
+.diode.color16 {
+    background-color: #c7c7c7;
+}
+
+.diode.color17 {
+    background-color: #bcbd22;
+}
+
+.diode.color18 {
+    background-color: #dbdb8d;
+}
+
+.diode.color19 {
+    background-color: #17becf;
+}
+
+.diode.color20 {
+    background-color: #9edae5;
+}

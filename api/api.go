@@ -1,11 +1,11 @@
 package api
 
 type Init struct {
-	NodeName string
+	Node    string
 	Streams []string
 }
 
 type LogEvent struct {
-	Code byte
-	Msg string
+	Stream string
+	Msg    string
 }

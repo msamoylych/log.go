@@ -2,13 +2,13 @@ package main
 
 import (
 	"strconv"
-	"os/user"
 	"log"
 	"io/ioutil"
 	"encoding/json"
+	"os/user"
 )
 
-const confPath = "/.log.go/harvester.conf"
+const confPath = "/.log.go/server.conf"
 
 type Server struct {
 	Host string `json:"host"`
@@ -20,17 +20,8 @@ func (s Server) Address() string {
 }
 
 type Config struct {
-	NodeName   string              `json:"nodeName"`
-	Server     Server              `json:"server"`
-	LogStreams map[string][]string `json:"logStreams"`
-}
-
-func (c *Config) Streams() []string {
-	streams := make([]string, 0, len(c.LogStreams))
-	for stream := range c.LogStreams {
-		streams = append(streams, stream)
-	}
-	return streams
+	WebServer Server `json:"webServer"`
+	LogServer Server `json:"logServer"`
 }
 
 func Parse() *Config {
@@ -50,14 +41,11 @@ func Parse() *Config {
 		log.Fatalln("Parse config error:", err)
 	}
 
-	if config.NodeName == "" {
-		log.Fatalln("Node name is not specified")
+	if config.LogServer.Port == 0 {
+		log.Fatalln("LogServer port is not specified")
 	}
-	if config.Server.Host == "" {
-		log.Fatalln("Server host is not specified")
-	}
-	if config.Server.Port == 0 {
-		log.Fatalln("Server port is not specified")
+	if config.WebServer.Port == 0 {
+		log.Fatalln("WebServer port is not specified")
 	}
 
 	return config

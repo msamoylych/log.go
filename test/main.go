@@ -12,10 +12,10 @@ func main() {
 	var i int
 	for {
 		w := bufio.NewWriter(f)
-		w.WriteString(strconv.Itoa(i) + "\n")
+		w.WriteString(strconv.Itoa(i) + "\r\n")
 		w.Flush()
 		f.Sync()
-		time.Sleep(1 * time.Second)
+		time.Sleep(1 * time.Millisecond)
 		i++
 	}
 }
