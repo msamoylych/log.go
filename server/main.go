@@ -3,20 +3,36 @@ package main
 import (
 	"os"
 	"os/signal"
-	"syscall"
+	"time"
+	"log"
 )
+
+const bufSize = 1000
 
 func main() {
 	sig := make(chan os.Signal)
-	signal.Notify(sig, syscall.SIGINT)
-	signal.Notify(sig, syscall.SIGTERM)
+	signal.Notify(sig, os.Interrupt, os.Kill)
 
-	conf := Parse()
-	events := make(chan *Event)
-	go LogServer(conf, events)
-	go WebServer(conf, events)
+	config := Parse()
+	events := make(chan *Event, bufSize)
+	harvesters := NewHarvesterMap()
+
+	webServer := NewWebServer(config, harvesters, events)
+	go webServer.Listen()
+
+	logServer := NewLogServer(config, harvesters, events)
+	go logServer.Listen()
 
 	<-sig
 
-	os.Exit(0)
+	logServer.Close()
+	close(events)
+
+	select {
+	case <-webServer.done:
+		webServer.Close()
+		os.Exit(0)
+	case <-time.After(1 * time.Second):
+		log.Fatalln("Stop server timeout")
+	}
 }

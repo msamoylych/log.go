@@ -8,13 +8,21 @@ import (
 )
 
 type Watcher struct {
-	tails []*tail.Tail
+	config *Config
+	events chan<- api.LogEvent
+	tails  []*tail.Tail
 }
 
 func NewWatcher(config *Config, events chan<- api.LogEvent) *Watcher {
-	watcher := Watcher{tails: make([]*tail.Tail, 0, 10)}
+	return &Watcher{
+		config: config,
+		events: events,
+		tails:  make([]*tail.Tail, 0, 10),
+	}
+}
 
-	for stream, files := range config.LogStreams {
+func (watcher *Watcher) Start() {
+	for stream, files := range watcher.config.LogStreams {
 		for _, file := range files {
 			seekInfo := tail.SeekInfo{Offset: 0, Whence: io.SeekEnd}
 			t, err := tail.TailFile(file, tail.Config{Follow: true, ReOpen: true, Location: &seekInfo, Logger: tail.DiscardingLogger})
@@ -26,17 +34,15 @@ func NewWatcher(config *Config, events chan<- api.LogEvent) *Watcher {
 
 			go func() {
 				for line := range t.Lines {
-					events <- api.LogEvent{Stream: stream, Msg: line.Text}
+					watcher.events <- api.LogEvent{Stream: stream, Msg: line.Text}
 				}
 			}()
 		}
 	}
-
-	return &watcher
 }
 
-func (w *Watcher) Stop() {
-	for _, t := range w.tails {
+func (watcher *Watcher) Stop() {
+	for _, t := range watcher.tails {
 		t.Stop()
 	}
 }

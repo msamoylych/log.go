@@ -8,12 +8,21 @@ import (
 )
 
 type Sender struct {
-	done chan bool
+	config *Config
+	events <-chan api.LogEvent
+	done   chan struct{}
 }
 
 func NewSender(config *Config, events <-chan api.LogEvent) *Sender {
-	sender := &Sender{done: make(chan bool)}
-	address := config.Server.Address()
+	return &Sender{
+		config: config,
+		events: events,
+		done:   make(chan struct{}),
+	}
+}
+
+func (sender *Sender) Connect() {
+	address := sender.config.Server.Address()
 	connection, err := net.Dial("tcp", address)
 	if err != nil {
 		log.Fatalln("Connection failed:", err)
@@ -25,21 +34,19 @@ func NewSender(config *Config, events <-chan api.LogEvent) *Sender {
 
 		encoder := gob.NewEncoder(connection)
 
-		init := api.Init{Node: config.NodeName, Streams: config.Streams()}
+		init := api.Init{Node: sender.config.NodeName, Streams: sender.config.Streams()}
 		err = encoder.Encode(&init)
 		if err != nil {
-			log.Panicln("Send init error:", err)
+			log.Fatalln("Send init error:", err)
 		}
 
-		for event := range events {
+		for event := range sender.events {
 			err = encoder.Encode(event)
 			if err != nil {
-				log.Panicln("Send event error:", err)
+				log.Fatalln("Send event error:", err)
 			}
 		}
 
-		sender.done <- true
+		sender.done <- struct{}{}
 	}()
-
-	return sender
 }

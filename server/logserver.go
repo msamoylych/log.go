@@ -6,62 +6,48 @@ import (
 	"io"
 	"net"
 	"encoding/gob"
-	"sync"
+	"sync/atomic"
 )
 
-type HarvesterMap struct {
-	sync.Mutex
-	Harvesters map[string][]string
+type LogServer struct {
+	config      *Config
+	harvesters  *HarvesterMap
+	events      chan<- *Event
+	listener    net.Listener
+	connections map[net.Conn]struct{}
+	closed      int32
 }
 
-func (h HarvesterMap) add(node string, streams []string) {
-	h.Lock()
-	defer h.Unlock()
-
-	h.Harvesters[node] = streams
-}
-
-func (h HarvesterMap) del(node string) {
-	h.Lock()
-	defer h.Unlock()
-
-	delete(h.Harvesters, node)
-}
-
-func (h HarvesterMap) Controls() *Controls {
-	h.Lock()
-	defer h.Unlock()
-
-	controls := Controls{Streams: make(map[string][]string), Nodes: make(map[string][]string)}
-	for node, streams := range h.Harvesters {
-		controls.Nodes[node] = streams
-		for _, stream := range streams {
-			if _, ok := controls.Streams[stream]; !ok {
-				controls.Streams[stream] = make([]string, 0, 10)
-			}
-			controls.Streams[stream] = append(controls.Streams[stream], node)
-		}
+func NewLogServer(config *Config, harvesters *HarvesterMap, events chan<- *Event) *LogServer {
+	return &LogServer{
+		config:      config,
+		harvesters:  harvesters,
+		events:      events,
+		connections: make(map[net.Conn]struct{}),
 	}
-	return &controls
 }
 
-var Harvesters = HarvesterMap{Harvesters: make(map[string][]string)}
-
-func LogServer(conf *Config, events chan<- *Event) {
-	addr := conf.LogServer.Address()
-	log.Println("LogServer listen at", addr)
+func (server *LogServer) Listen() {
+	addr := server.config.LogServer.Address()
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalln("Init LogServer error:", err)
 	}
-	defer ln.Close()
+	log.Println("LogServer listen at", addr)
+
+	server.listener = ln
 
 	for {
 		connection, err := ln.Accept()
 		if err != nil {
+			if server.IsClosed() {
+				return
+			}
 			log.Println("Accept connection error:", err)
 			continue
 		}
+
+		server.connections[connection] = struct{}{}
 
 		go func() {
 			defer connection.Close()
@@ -75,24 +61,46 @@ func LogServer(conf *Config, events chan<- *Event) {
 				return
 			}
 
-			Harvesters.add(init.Node, init.Streams)
+			server.harvesters.add(init.Node, init.Streams)
 			log.Println("Harvester '" + init.Node + "' connected")
 
 			var event api.LogEvent
 			for {
 				err = decoder.Decode(&event)
 				switch {
-				case err == io.EOF:
-					Harvesters.del(init.Node)
-					log.Println("Harvester '" + init.Node + "' disconnected")
+				case server.IsClosed():
 					return
 				case err != nil:
-					Harvesters.del(init.Node)
-					log.Println("Read event error:", err)
+					server.harvesters.del(init.Node)
+					delete(server.connections, connection)
+					if err == io.EOF {
+						log.Println("Harvester '" + init.Node + "' disconnected")
+					} else {
+						log.Println("Harvester '"+init.Node+"' disconnected:", err)
+					}
 					return
 				}
-				events <- &Event{Node: init.Node, Stream: event.Stream, Message: event.Msg}
+
+				server.events <- &Event{Node: init.Node, Stream: event.Stream, Message: event.Msg}
 			}
 		}()
 	}
+}
+
+func (server *LogServer) Close() {
+	atomic.StoreInt32(&server.closed, 1)
+	err := server.listener.Close()
+	if err != nil {
+		log.Println("Close listener error:", err)
+	}
+	for con := range server.connections {
+		err = con.Close()
+		if err != nil {
+			log.Println("Close connection error:", err)
+		}
+	}
+}
+
+func (server *LogServer) IsClosed() bool {
+	return atomic.LoadInt32(&server.closed) == 1
 }
