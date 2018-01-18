@@ -29,12 +29,10 @@ func (h HarvesterMap) Controls() *Controls {
 	for node, streams := range h.harvesters {
 		controls.Nodes[node] = streams
 		for _, stream := range streams {
-			streams := controls.Streams[stream]
-			if streams == nil {
-				streams = make([]string, 0, 10)
-				controls.Streams[stream] = streams
+			if controls.Streams[stream] == nil {
+				controls.Streams[stream] = make([]string, 0, 10)
 			}
-			streams = append(streams, node)
+			controls.Streams[stream] = append(controls.Streams[stream], node)
 		}
 	}
 	return controls

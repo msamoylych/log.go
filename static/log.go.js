@@ -10,9 +10,8 @@ var streamsCheckboxMap = new Map();
 var nodesCheckboxMap = new Map();
 
 function parseControls(data) {
-    var controls = JSON.parse(data);
-    var streams = controls.streams;
-    var nodes = controls.nodes;
+    var streams = data.streams;
+    var nodes = data.nodes;
 
     for (var stream in streams) {
         if (!streams.hasOwnProperty(stream)) {
