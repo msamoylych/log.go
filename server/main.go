@@ -15,7 +15,7 @@ func main() {
 
 	config := Parse()
 	events := make(chan *Event, bufSize)
-	harvesters := NewHarvesterMap()
+	harvesters := NewHarvesters()
 
 	webServer := NewWebServer(config, harvesters, events)
 	go webServer.Listen()

@@ -1,7 +1,17 @@
-(function () {
-    $.get("controls", parseControls);
-    initWS();
-})();
+$(function () {
+    var ws = new WebSocket('ws://' + window.location.host + '/ws');
+    ws.onmessage = function (ev) {
+        var msg = JSON.parse(ev.data);
+        switch (msg.type) {
+            case 'controls':
+                onControls(msg);
+                break;
+            case 'event':
+                onEvent(msg);
+                break;
+        }
+    }
+});
 
 var STREAMS = $('#streams');
 var NODES = $('#nodes');
@@ -9,42 +19,41 @@ var NODES = $('#nodes');
 var streamsCheckboxMap = new Map();
 var nodesCheckboxMap = new Map();
 
-function parseControls(data) {
-    var streams = data.streams;
-    var nodes = data.nodes;
+function onControls(controls) {
+    STREAMS.empty();
+    NODES.empty();
+    streamsCheckboxMap.clear();
+    nodesCheckboxMap.clear();
+
+    var streams = controls.streams;
+    var nodes = controls.nodes;
 
     for (var stream in streams) {
         if (!streams.hasOwnProperty(stream)) {
             continue
         }
 
-        var streamsGroup = div({id: stream, class: 'list-group'});
-        var streamCheckboxMap = new Map();
-        var streamNode = listGroupItem(stream, true);
-        streamsGroup.append(streamNode);
-        var nds = streams[stream];
-        for (var n = 0; n < nds.length; n++) {
-            streamsGroup.append(listGroupItem(nds[n], false, streamNode, streamCheckboxMap));
-        }
-        STREAMS.append(streamsGroup);
-        streamsCheckboxMap.set(stream, streamCheckboxMap);
+        listGroup(stream, streams[stream], STREAMS, streamCheckboxMap)
     }
     for (var node in nodes) {
         if (!nodes.hasOwnProperty(node)) {
             continue
         }
 
-        var nodesGroup = div({id: node, class: 'list-group'});
-        var nodeCheckboxMap = new Map();
-        var nodeNode = listGroupItem(node, false);
-        nodesGroup.append(nodeNode);
-        var strms = nodes[node];
-        for (var s = 0; s < strms.length; s++) {
-            nodesGroup.append(listGroupItem(strms[s], true, nodeNode, nodeCheckboxMap));
-        }
-        NODES.append(nodesGroup);
-        nodesCheckboxMap.set(node, nodeCheckboxMap);
+        listGroup(node, nodes[node], NODES, nodesCheckboxMap)
     }
+}
+
+function listGroup(id, items, container, map) {
+    var group = div({id: id, class: 'list-group'});
+    var checkboxMap = new Map();
+    var groupItem = listGroupItem(id, true);
+    group.append(groupItem);
+    for (var i = 0; i < items.length; n++) {
+        group.append(listGroupItem(items[i], false, groupItem, checkboxMap));
+    }
+    container.append(group);
+    map.set(stream, checkboxMap);
 }
 
 function listGroupItem(name, stream, parent, map) {
@@ -118,23 +127,6 @@ function listGroupItem(name, stream, parent, map) {
     return item
 }
 
-var EVENTS = $('#events');
-
-function initWS() {
-    var ws = new WebSocket('ws://' + window.location.host + '/ws');
-    ws.onmessage = function (ev) {
-        var event = JSON.parse(ev.data);
-        var row = div({class: 'event'});
-        row.append(span({class: ['stream', streamColor(event.stream)], text: event.stream}));
-        row.append(' ');
-        row.append(span({class: ['node', nodeColor(event.node)], text: event.node}));
-        row.append(' ');
-        row.append(span({class: 'message', text: event.message}));
-        EVENTS.append(row);
-        EVENTS[0].scrollTop = EVENTS[0].scrollHeight;
-    }
-}
-
 function filterStreams() {
     filter(STREAMS, $('#streams-filter').val())
 }
@@ -151,6 +143,19 @@ function filter(list, pattern) {
             $(this).hide()
         }
     })
+}
+
+var EVENTS = $('#events');
+
+function onEvent(event) {
+    var row = div({class: 'event'});
+    row.append(span({class: ['stream', streamColor(event.stream)], text: event.stream}));
+    row.append(' ');
+    row.append(span({class: ['node', nodeColor(event.node)], text: event.node}));
+    row.append(' ');
+    row.append(span({class: 'message', text: event.message}));
+    EVENTS.append(row);
+    EVENTS[0].scrollTop = EVENTS[0].scrollHeight;
 }
 
 var streamsColors = {};

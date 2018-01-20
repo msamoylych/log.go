@@ -6,38 +6,44 @@ import (
 	"golang.org/x/net/websocket"
 	"sync"
 	"net"
-	"encoding/json"
 	"mime"
 	"path/filepath"
 	"sync/atomic"
 	"io"
 )
 
-type clients struct {
-	sync.RWMutex
-	connections map[*websocket.Conn]struct{}
+type client struct {
+	harvesters *Harvesters
 }
 
-func (c clients) add(connection *websocket.Conn) {
+type clients struct {
+	sync.RWMutex
+	clients map[*websocket.Conn]*client
+}
+
+func (c clients) add(connection *websocket.Conn, clnt *client) {
 	c.Lock()
 	defer c.Unlock()
 
-	c.connections[connection] = struct{}{}
+	c.clients[connection] = clnt
 }
 
 func (c clients) del(connection *websocket.Conn) {
 	c.Lock()
 	defer c.Unlock()
 
-	delete(c.connections, connection)
+	delete(c.clients, connection)
 }
 
-func (c clients) send(event *Event) {
+func (c clients) send(message interface{}) {
 	c.RLock()
 	defer c.RUnlock()
 
-	for connection := range c.connections {
-		websocket.JSON.Send(connection, event)
+	for connection := range c.clients {
+		err := websocket.JSON.Send(connection, message)
+		if err != nil {
+			log.Println("WebSocket send error:", err)
+		}
 	}
 }
 
@@ -45,7 +51,7 @@ func (c clients) close() {
 	c.Lock()
 	defer c.Unlock()
 
-	for connection := range c.connections {
+	for connection := range c.clients {
 		connection.Close()
 	}
 }
@@ -53,21 +59,21 @@ func (c clients) close() {
 type WebServer struct {
 	*http.Server
 	config     *Config
-	harvesters *HarvesterMap
+	harvesters *Harvesters
 	events     <-chan *Event
 	done       chan struct{}
-	clients    *clients
+	clients    clients
 	closed     int32
 }
 
-func NewWebServer(config *Config, harvesters *HarvesterMap, events <-chan *Event) (*WebServer) {
+func NewWebServer(config *Config, harvesters *Harvesters, events <-chan *Event) (*WebServer) {
 	return &WebServer{
 		Server:     new(http.Server),
 		config:     config,
 		harvesters: harvesters,
 		events:     events,
 		done:       make(chan struct{}),
-		clients:    &clients{connections: make(map[*websocket.Conn]struct{})},
+		clients:    clients{clients: make(map[*websocket.Conn]*client)},
 	}
 }
 
@@ -86,6 +92,15 @@ func (server *WebServer) Listen() {
 		server.done <- struct{}{}
 	}()
 
+	go func() {
+		for harvester := range server.harvesters.Added {
+			for conn, clnt := range server.clients.clients {
+				clnt.harvesters.Merge(harvester)
+				websocket.JSON.Send(conn, clnt.harvesters.Controls())
+			}
+		}
+	}()
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		name := r.RequestURI[1:]
 		if name == "" {
@@ -101,24 +116,20 @@ func (server *WebServer) Listen() {
 		}
 	})
 
-	http.HandleFunc("/controls", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := json.Marshal(server.harvesters.Controls())
-		if err != nil {
-			log.Println("Marshal controls error:", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		} else {
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(resp)
-		}
-	})
-
 	http.Handle("/ws", websocket.Handler(func(connection *websocket.Conn) {
 		defer connection.Close()
 
-		server.clients.add(connection)
-		err := websocket.JSON.Receive(connection, nil)
+		clnt := &client{harvesters: server.harvesters.Clone()}
+		server.clients.add(connection, clnt)
+
+		err := websocket.JSON.Send(connection, clnt.harvesters.Controls())
+		if err != nil {
+			log.Println("WebSocket send error:", err)
+		}
+
+		err = websocket.JSON.Receive(connection, nil)
 		if err != nil && err != io.EOF {
-			log.Println("WebSocket connection error:", err)
+			log.Println("WebSocket receive error:", err)
 		}
 		server.clients.del(connection)
 	}))

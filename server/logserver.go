@@ -11,14 +11,14 @@ import (
 
 type LogServer struct {
 	config      *Config
-	harvesters  *HarvesterMap
+	harvesters  *Harvesters
 	events      chan<- *Event
 	listener    net.Listener
 	connections map[net.Conn]struct{}
 	closed      int32
 }
 
-func NewLogServer(config *Config, harvesters *HarvesterMap, events chan<- *Event) *LogServer {
+func NewLogServer(config *Config, harvesters *Harvesters, events chan<- *Event) *LogServer {
 	return &LogServer{
 		config:      config,
 		harvesters:  harvesters,
@@ -61,27 +61,27 @@ func (server *LogServer) Listen() {
 				return
 			}
 
-			server.harvesters.add(init.Node, init.Streams)
+			server.harvesters.Add(init.Node, init.Streams)
 			log.Println("Harvester '" + init.Node + "' connected")
 
 			var event api.LogEvent
 			for {
 				err = decoder.Decode(&event)
-				switch {
-				case server.IsClosed():
-					return
-				case err != nil:
-					server.harvesters.del(init.Node)
+				if err != nil {
+					server.harvesters.Del(init.Node)
 					delete(server.connections, connection)
+					if server.IsClosed() {
+						break
+					}
 					if err == io.EOF {
 						log.Println("Harvester '" + init.Node + "' disconnected")
 					} else {
 						log.Println("Harvester '"+init.Node+"' disconnected:", err)
 					}
-					return
+					break
 				}
 
-				server.events <- &Event{Node: init.Node, Stream: event.Stream, Message: event.Msg}
+				server.events <- NewEvent(init.Node, event.Stream, event.Msg)
 			}
 		}()
 	}

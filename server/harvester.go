@@ -1,43 +1,66 @@
 package main
 
-import "sync"
+import (
+	"sync"
+)
 
-type HarvesterMap struct {
+type Harvester struct {
+	Node    string
+	Streams []string
+}
+
+type Harvesters struct {
 	sync.RWMutex
-	harvesters map[string][]string
+	Harvesters map[string][]string
+	Added      chan *Harvester
 }
 
-func (h HarvesterMap) add(node string, streams []string) {
+func (h *Harvesters) Add(node string, streams []string) {
 	h.Lock()
 	defer h.Unlock()
 
-	h.harvesters[node] = streams
+	h.Harvesters[node] = streams
+	h.Added <- &Harvester{Node: node, Streams: streams}
 }
 
-func (h HarvesterMap) del(node string) {
+func (h *Harvesters) Merge(harvester *Harvester) {
 	h.Lock()
 	defer h.Unlock()
 
-	delete(h.harvesters, node)
+	h.Harvesters[harvester.Node] = harvester.Streams
 }
 
-func (h HarvesterMap) Controls() *Controls {
+func (h *Harvesters) Del(node string) {
+	h.Lock()
+	defer h.Unlock()
+
+	delete(h.Harvesters, node)
+}
+
+func (h *Harvesters) Controls() *Controls {
 	h.RLock()
 	defer h.RUnlock()
 
-	controls := &Controls{Streams: make(map[string][]string), Nodes: make(map[string][]string)}
-	for node, streams := range h.harvesters {
+	controls := NewControls()
+	for node, streams := range h.Harvesters {
 		controls.Nodes[node] = streams
 		for _, stream := range streams {
-			if controls.Streams[stream] == nil {
-				controls.Streams[stream] = make([]string, 0, 10)
-			}
 			controls.Streams[stream] = append(controls.Streams[stream], node)
 		}
 	}
 	return controls
 }
 
-func NewHarvesterMap() *HarvesterMap {
-	return &HarvesterMap{harvesters: make(map[string][]string)}
+func NewHarvesters() *Harvesters {
+	return &Harvesters{Harvesters: make(map[string][]string), Added: make(chan *Harvester)}
+}
+
+func (h *Harvesters) Clone() *Harvesters {
+	harvesters := Harvesters{Harvesters: make(map[string][]string)}
+	for node, streams := range h.Harvesters {
+		for _, stream := range streams {
+			harvesters.Harvesters[node] = append(harvesters.Harvesters[node], stream)
+		}
+	}
+	return &harvesters
 }
