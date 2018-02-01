@@ -10,22 +10,22 @@ import (
 
 const confPath = "/.log.go/harvester.conf"
 
-type Server struct {
+type server struct {
 	Host string `json:"host"`
 	Port uint16 `json:"port"`
 }
 
-func (s Server) Address() string {
+func (s server) address() string {
 	return s.Host + ":" + strconv.FormatUint(uint64(s.Port), 10)
 }
 
-type Config struct {
+type config struct {
 	NodeName   string              `json:"nodeName"`
-	Server     Server              `json:"server"`
+	Server     server              `json:"server"`
 	LogStreams map[string][]string `json:"logStreams"`
 }
 
-func (c *Config) Streams() []string {
+func (c *config) Streams() []string {
 	streams := make([]string, 0, len(c.LogStreams))
 	for stream := range c.LogStreams {
 		streams = append(streams, stream)
@@ -33,7 +33,7 @@ func (c *Config) Streams() []string {
 	return streams
 }
 
-func Parse() *Config {
+func parse() *config {
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatalln("Get current user error:", err)
@@ -44,7 +44,7 @@ func Parse() *Config {
 		log.Fatalln("Read config error:", err)
 	}
 
-	config := new(Config)
+	config := new(config)
 	err = json.Unmarshal(confFile, config)
 	if err != nil {
 		log.Fatalln("Parse config error:", err)

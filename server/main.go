@@ -7,30 +7,31 @@ import (
 	"log"
 )
 
-const bufSize = 1000
+const bufSize = 100
 
 func main() {
 	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt, os.Kill)
 
-	config := Parse()
-	events := make(chan *Event, bufSize)
-	harvesters := NewHarvesters()
+	config := parse()
+	harvestersCh := make(chan *harvester)
+	eventsCh := make(chan *logEvent, bufSize)
 
-	webServer := NewWebServer(config, harvesters, events)
-	go webServer.Listen()
+	webServer := newWebServer(config, harvestersCh, eventsCh)
+	go webServer.listen()
 
-	logServer := NewLogServer(config, harvesters, events)
-	go logServer.Listen()
+	logServer := newLogServer(config, harvestersCh, eventsCh)
+	go logServer.listen()
 
 	<-sig
 
-	logServer.Close()
-	close(events)
+	logServer.close()
+	close(harvestersCh)
+	close(eventsCh)
 
 	select {
-	case <-webServer.done:
-		webServer.Close()
+	case <-webServer.doneCh:
+		webServer.close()
 		os.Exit(0)
 	case <-time.After(1 * time.Second):
 		log.Fatalln("Stop server timeout")

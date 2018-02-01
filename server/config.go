@@ -10,21 +10,21 @@ import (
 
 const confPath = "/.log.go/server.conf"
 
-type Server struct {
+type server struct {
 	Host string `json:"host"`
 	Port uint16 `json:"port"`
 }
 
-func (s Server) Address() string {
+func (s server) address() string {
 	return s.Host + ":" + strconv.FormatUint(uint64(s.Port), 10)
 }
 
-type Config struct {
-	WebServer Server `json:"webServer"`
-	LogServer Server `json:"logServer"`
+type config struct {
+	WebServer server `json:"webServer"`
+	LogServer server `json:"logServer"`
 }
 
-func Parse() *Config {
+func parse() *config {
 	usr, err := user.Current()
 	if err != nil {
 		log.Fatalln("Get current user error:", err)
@@ -35,7 +35,7 @@ func Parse() *Config {
 		log.Fatalln("Read config error:", err)
 	}
 
-	config := new(Config)
+	config := new(config)
 	err = json.Unmarshal(confFile, config)
 	if err != nil {
 		log.Fatalln("Parse config error:", err)

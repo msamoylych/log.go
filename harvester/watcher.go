@@ -7,21 +7,21 @@ import (
 	"log"
 )
 
-type Watcher struct {
-	config *Config
-	events chan<- api.LogEvent
-	tails  []*tail.Tail
+type watcher struct {
+	config   *config
+	eventsCh chan<- *api.LogEvent
+	tails    []*tail.Tail
 }
 
-func NewWatcher(config *Config, events chan<- api.LogEvent) *Watcher {
-	return &Watcher{
-		config: config,
-		events: events,
-		tails:  make([]*tail.Tail, 0, 10),
+func newWatcher(config *config, eventsCh chan<- *api.LogEvent) *watcher {
+	return &watcher{
+		config:   config,
+		eventsCh: eventsCh,
+		tails:    make([]*tail.Tail, 0, 10),
 	}
 }
 
-func (watcher *Watcher) Start() {
+func (watcher *watcher) start() {
 	for stream, files := range watcher.config.LogStreams {
 		for _, file := range files {
 			seekInfo := tail.SeekInfo{Offset: 0, Whence: io.SeekEnd}
@@ -34,14 +34,14 @@ func (watcher *Watcher) Start() {
 
 			go func() {
 				for line := range t.Lines {
-					watcher.events <- api.LogEvent{Stream: stream, Msg: line.Text}
+					watcher.eventsCh <- &api.LogEvent{stream, line.Text}
 				}
 			}()
 		}
 	}
 }
 
-func (watcher *Watcher) Stop() {
+func (watcher *watcher) stop() {
 	for _, t := range watcher.tails {
 		t.Stop()
 	}

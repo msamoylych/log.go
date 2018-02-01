@@ -1,0 +1,272 @@
+html, body, nav, main, .full-height {
+    height: 100%;
+}
+
+#controls {
+    padding-right: 5px;
+}
+
+#streams-filter, #nodes-filter {
+    margin: 1px 0;
+}
+
+.list-group-item {
+    display: flex;
+    align-items: center;
+    padding: 0 5px;
+}
+
+.diode {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    background-color: #999;
+}
+
+.name {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 5px;
+}
+
+.checkboxes {
+    display: flex;
+}
+
+.checkbox {
+    margin: 0 1px;
+}
+
+.checkbox:first-child {
+    margin-left: 0;
+}
+
+.checkbox:last-child {
+    margin-right: 0;
+}
+
+#screens {
+    padding-left: 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.screen {
+    flex: 1 1 100%;
+    margin-top: 5px;
+    display: flex;
+    position: relative;
+}
+
+.messages {
+    flex-basis: 100%;
+    padding: 0 5px;
+    overflow-y: scroll;
+    overflow-wrap: break-word;
+}
+
+.screen-controls {
+    display: flex;
+    position: absolute;
+    right: 20px;
+    top: 5px;
+}
+
+.screen-controls .form-control, .screen-controls .btn {
+    padding: .1rem .75rem;
+    margin: 0 1px;
+}
+
+#status-bar {
+    height: 45px;
+    flex-shrink: 0;
+    order: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#stats {
+    display: flex;
+}
+
+.stats {
+    margin-left: 20px;
+}
+
+.stats-num {
+    font-size: 32px;
+    line-height: 1;
+}
+
+.stats-label {
+    font-size: 14px;
+}
+
+.form-control:focus, .btn-primary:focus, .btn-primary:active, .btn-secondary:focus, .btn-secondary:active {
+    box-shadow: none !important;
+}
+
+.color1 {
+    color: #1f77b4;
+}
+
+.color2 {
+    color: #aec7e8;
+}
+
+.color3 {
+    color: #ff7f0e;
+}
+
+.color4 {
+    color: #ffbb78;
+}
+
+.color5 {
+    color: #2ca02c;
+}
+
+.color6 {
+    color: #98df8a;
+}
+
+.color7 {
+    color: #d62728;
+}
+
+.color8 {
+    color: #ff9896;
+}
+
+.color9 {
+    color: #9467bd;
+}
+
+.color10 {
+    color: #c5b0d5;
+}
+
+.color11 {
+    color: #8c564b;
+}
+
+.color12 {
+    color: #c49c94;
+}
+
+.color13 {
+    color: #e377c2;
+}
+
+.color14 {
+    color: #f7b6d2;
+}
+
+.color15 {
+    color: #7f7f7f;
+}
+
+.color16 {
+    color: #c7c7c7;
+}
+
+.color17 {
+    color: #bcbd22;
+}
+
+.color18 {
+    color: #dbdb8d;
+}
+
+.color19 {
+    color: #17becf;
+}
+
+.color20 {
+    color: #9edae5;
+}
+
+.diode.color1.active {
+    background-color: #1f77b4;
+}
+
+.diode.color2.active {
+    background-color: #aec7e8;
+}
+
+.diode.color3.active {
+    background-color: #ff7f0e;
+}
+
+.diode.color4.active {
+    background-color: #ffbb78;
+}
+
+.diode.color5.active {
+    background-color: #2ca02c;
+}
+
+.diode.color6.active {
+    background-color: #98df8a;
+}
+
+.diode.color7.active {
+    background-color: #d62728;
+}
+
+.diode.color8.active {
+    background-color: #ff9896;
+}
+
+.diode.color9.active {
+    background-color: #9467bd;
+}
+
+.diode.color10.active {
+    background-color: #c5b0d5;
+}
+
+.diode.color11.active {
+    background-color: #8c564b;
+}
+
+.diode.color12.active {
+    background-color: #c49c94;
+}
+
+.diode.color13.active {
+    background-color: #e377c2;
+}
+
+.diode.color14.active {
+    background-color: #f7b6d2;
+}
+
+.diode.color15.active {
+    background-color: #7f7f7f;
+}
+
+.diode.color16.active {
+    background-color: #c7c7c7;
+}
+
+.diode.color17.active {
+    background-color: #bcbd22;
+}
+
+.diode.color18.active {
+    background-color: #dbdb8d;
+}
+
+.diode.color19.active {
+    background-color: #17becf;
+}
+
+.diode.color20.active {
+    background-color: #9edae5;
+}

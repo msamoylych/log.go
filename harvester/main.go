@@ -8,28 +8,28 @@ import (
 	"log"
 )
 
-const bufSize = 1000
+const bufSize = 100
 
 func main() {
 	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt, os.Kill)
 
-	config := Parse()
-	events := make(chan api.LogEvent, bufSize)
+	config := parse()
+	eventsCh := make(chan *api.LogEvent, bufSize)
 
-	sender := NewSender(config, events)
-	sender.Connect()
+	sender := newSender(config, eventsCh)
+	sender.connect()
 
-	watcher := NewWatcher(config, events)
-	watcher.Start()
+	watcher := newWatcher(config, eventsCh)
+	watcher.start()
 
 	<-sig
 
-	watcher.Stop()
-	close(events)
+	watcher.stop()
+	close(eventsCh)
 
 	select {
-	case <-sender.done:
+	case <-sender.doneCh:
 		os.Exit(0)
 	case <-time.After(1 * time.Second):
 		log.Fatalln("Stop timeout")
