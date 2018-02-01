@@ -348,6 +348,15 @@ $(function () {
 
         return {
             handler: function (controls) {
+                $('#streams').empty();
+                _streams = [];
+                _streamGroups = {};
+                _streamsCount = 0;
+                $('#nodes').empty();
+                _nodes = [];
+                _nodeGroups = {};
+                _nodesCount = 0;
+
                 let link = {};
 
                 $.each(controls.streams, function (stream, nodes) {
