@@ -50,9 +50,9 @@ func (server *logServer) listen() {
 	addr := server.config.LogServer.address()
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatalln("Init logServer error:", err)
+		log.Fatalln("Init LogServer error:", err)
 	}
-	log.Println("logServer listen at", addr)
+	log.Println("LogServer listen at", addr)
 
 	server.listener = ln
 	server.connections = make(map[net.Conn]struct{})

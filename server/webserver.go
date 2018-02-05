@@ -131,9 +131,9 @@ func (server *webServer) listen() {
 	addr := server.config.WebServer.address()
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatalln("Init webServer error:", err)
+		log.Fatalln("Init WebServer error:", err)
 	}
-	log.Println("webServer listen at", addr)
+	log.Println("WebServer listen at", addr)
 
 	go func() {
 		for harvester := range server.harvestersCh {
